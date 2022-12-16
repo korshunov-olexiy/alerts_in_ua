@@ -24,8 +24,8 @@ if __name__ == "__main__":
     win.width = width
     win.setGeometry(x, 30, width, height)
 
-    win_main = QWebEngineView(win)
-    win.setCentralWidget(win_main)
-    win_main.load(QtCore.QUrl('https://alerts.in.ua'))
+    browser = QWebEngineView(win)
+    win.setCentralWidget(browser)
+    browser.load(QtCore.QUrl('https://alerts.in.ua'))
     win.show()
     sys.exit(app.exec_())
