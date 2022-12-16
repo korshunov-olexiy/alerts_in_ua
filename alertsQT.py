@@ -29,4 +29,4 @@ if __name__ == "__main__":
     win.setCentralWidget(win_main)
     win_main.load(QtCore.QUrl('https://alerts.in.ua'))
     win.show()
-    app.exec_()
+    sys.exit(app.exec_())
