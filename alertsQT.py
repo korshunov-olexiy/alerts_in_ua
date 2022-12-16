@@ -13,7 +13,7 @@ class Window(QtWidgets.QMainWindow):
         self.setGeometry(self.geometry_rect())
         self.show()
 
-    def geometry_rect(self):
+    def geometry_rect(self) -> QtCore.QRect:
         monitor = get_monitors()[0]
         scree_width, screen_height = monitor.width, monitor.height
         win_width, win_height = scree_width//4, screen_height - 75
