@@ -5,8 +5,8 @@ from screeninfo import get_monitors
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self) -> None:
-        super().__init__(flags=QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.CustomizeWindowHint|
-                                    QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint|
+        super().__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
+                                    QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|
                                     QtCore.Qt.WindowMinimizeButtonHint)
         title = "Мапа тревог України"
         self.setWindowTitle = title
@@ -19,6 +19,7 @@ class Window(QtWidgets.QMainWindow):
         win_width, win_height = scree_width//4, screen_height - 75
         x = scree_width - win_width + 5
         return QtCore.QRect(x, 30, win_width, win_height)
+
 
 if __name__ == "__main__":
     import sys
