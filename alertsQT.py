@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QRect
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from screeninfo import get_monitors
+
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -18,7 +18,7 @@ class Window(QtWidgets.QMainWindow):
         scree_width, screen_height = monitor.width, monitor.height
         win_width, win_height = scree_width//4, screen_height - 75
         x = scree_width - win_width + 5
-        return QRect(x, 30, win_width, win_height)
+        return QtCore.QRect(x, 30, win_width, win_height)
 
 if __name__ == "__main__":
     import sys
