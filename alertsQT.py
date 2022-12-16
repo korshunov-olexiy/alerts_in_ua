@@ -1,6 +1,5 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from screeninfo import get_monitors
 
 
 class Window(QtWidgets.QMainWindow):
@@ -14,11 +13,11 @@ class Window(QtWidgets.QMainWindow):
         self.show()
 
     def geometry_rect(self) -> QtCore.QRect:
-        monitor = get_monitors()[0]
-        scree_width, screen_height = monitor.width, monitor.height
-        win_width, win_height = scree_width//4, screen_height - 75
-        x = scree_width - win_width + 5
-        return QtCore.QRect(x, 30, win_width, win_height)
+        rect = QtWidgets.QApplication.desktop().availableGeometry()
+        toolbar = 30
+        win_width, win_height = rect.width()//4, rect.height() - toolbar
+        x = rect.width() - win_width - 1
+        return QtCore.QRect(x, toolbar, win_width, win_height)
 
 
 if __name__ == "__main__":
