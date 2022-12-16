@@ -1,5 +1,4 @@
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWebEngineWidgets import *
 from screeninfo import get_monitors
 
