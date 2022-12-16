@@ -1,31 +1,32 @@
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QRect
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from screeninfo import get_monitors
 
-monitor = get_monitors()[0]
+class Window(QtWidgets.QMainWindow):
+    def __init__(self) -> None:
+        super().__init__(flags=QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.CustomizeWindowHint|
+                                    QtCore.Qt.WindowMaximizeButtonHint | QtCore.Qt.WindowCloseButtonHint|
+                                    QtCore.Qt.WindowMinimizeButtonHint)
+        title = "Мапа тревог України"
+        self.setWindowTitle = title
+        self.setGeometry(self.geometry_rect())
+        self.show()
 
-ws = monitor.width
-hs = monitor.height
-width = ws//4
-height = hs - 75
-x = ws - width + 5
-
+    def geometry_rect(self):
+        monitor = get_monitors()[0]
+        scree_width, screen_height = monitor.width, monitor.height
+        win_width, win_height = scree_width//4, screen_height - 75
+        x = scree_width - win_width + 5
+        return QRect(x, 30, win_width, win_height)
 
 if __name__ == "__main__":
     import sys
 
-    app=QtWidgets.QApplication(sys.argv)
-    win = QtWidgets.QMainWindow(flags=QtCore.Qt.WindowStaysOnTopHint|
-                                    QtCore.Qt.CustomizeWindowHint|
-                                    QtCore.Qt.WindowMaximizeButtonHint|
-                                    QtCore.Qt.WindowCloseButtonHint|
-                                    QtCore.Qt.WindowMinimizeButtonHint)
-    win.height = height
-    win.width = width
-    win.setGeometry(x, 30, width, height)
+    app = QtWidgets.QApplication(sys.argv)
+    window = Window()
 
-    browser = QWebEngineView(win)
-    win.setCentralWidget(browser)
+    browser = QWebEngineView(window)
+    window.setCentralWidget(browser)
     browser.load(QtCore.QUrl('https://alerts.in.ua'))
-    win.show()
     sys.exit(app.exec_())
