@@ -24,12 +24,23 @@ class Window(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     import sys
 
-    def callback_function(html):
-        QMessageBox.question(window, "Title", str(html), QMessageBox.Yes|QMessageBox.No)
-        # print(html)
+    def callback_function(bool_res):
+        # if bool(bool_res):
+        QMessageBox.question(window, "Title", str(bool_res), QMessageBox.Yes)
 
     def on_load_finished():
-        browser.page().runJavaScript("document.querySelector('path.map-district:nth-child(18)')", callback_function)
+        browser.page().runJavaScript('''
+        function GetOblast(findObl){
+            let mycls = document.getElementsByClassName('map-district hour-0 active  air-raid ');
+            for (let i = 0; i < mycls.length; i++){
+                if (mycls[i].attributes['data-oblast'].nodeValue.toLowerCase().includes(findObl.toLowerCase())){
+                    return true;
+                }
+            }
+            return false;
+        };
+        GetOblast('Сумська');
+        ''', callback_function)
 
     app = QtWidgets.QApplication(sys.argv)
     window = Window()
