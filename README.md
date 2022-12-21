@@ -1,2 +1,2 @@
-For the possibility of constant control of shelling by russian troops on the territory of Ukraine,
-it displaying a window always on top with the opened site https://alerts.in.ua.
+For people who do not have a mobile connection and telegram.
+For constant monitoring and notification of shelling from the Russian side, it displays a window on top of all with the site https://alerts.in.ua.
