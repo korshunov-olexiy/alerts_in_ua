@@ -15,7 +15,8 @@ class Window(QtWidgets.QMainWindow):
 
     def geometry_rect(self) -> QtCore.QRect:
         rect = QtWidgets.QApplication.desktop().availableGeometry()
-        win_width, win_height = rect.width()//4, rect.height() - 30
+        toolbar = 30
+        win_width, win_height = rect.width()//4, rect.height() - toolbar
         x = rect.width() - win_width - 1
         return QtCore.QRect(x, toolbar, win_width, win_height)
 
