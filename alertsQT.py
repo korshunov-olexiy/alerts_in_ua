@@ -85,7 +85,6 @@ if __name__ == "__main__":
     window.check_alarm()
     url = QtCore.QUrl("https://alerts.in.ua/lite")
     browser.load(url)
-    # QMessageBox.question(window, "Title", browser.page().findText("Сумська"), QMessageBox.Yes|QMessageBox.No)
     ret = app.exec_()
     window.thread.terminate()
     # window.thread.quit()
