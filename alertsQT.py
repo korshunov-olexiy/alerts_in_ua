@@ -69,7 +69,7 @@ class Window(QtWidgets.QMainWindow):
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
         if self.worker.alarmed: # if alarm on
-            msgbox.setText("УВАГА! Повітряна тривога! ВСІ В УКРИТТЯ!!!")
+            msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
         msgbox.exec_()
