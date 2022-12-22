@@ -64,13 +64,14 @@ class Window(QtWidgets.QMainWindow):
 
     def ShowMessage(self):
         msgbox = QMessageBox(parent=self)
-        msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_icon.png"))))
         msgbox.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
         if self.worker.alarmed: # if alarm on
+            msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_on1.png"))))
             msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
+            msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_off.png"))))
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
         msgbox.exec_()
 
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     browser = QWebEngineView(window)
     window.setCentralWidget(browser)
     window.check_alarm()
-    url = QtCore.QUrl("https://alerts.in.ua/lite")
+    url = QtCore.QUrl("https://alerts.in.ua")  # /lite
     browser.load(url)
     ret = app.exec_()
     window.thread.terminate()
