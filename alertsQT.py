@@ -15,7 +15,8 @@ from PyQt5.QtWidgets import QMessageBox
 class Worker(QObject):
     finished = pyqtSignal()
     alarm_on = pyqtSignal(int)
-    alarmed = False
+    # [number of hits, alarmed on, alarmed off]
+    status_alarmed = [0, False, False]
 
     def __init__(self, oblast) -> None:
         super().__init__()
@@ -28,12 +29,12 @@ class Worker(QObject):
                 data_raw = json.loads(response.read())
                 data = {k.lower(): v for k, v in data_raw.items()}
                 data_oblast = data[self.oblast.lower()]
-                if not data_oblast is None and not self.alarmed:
+                if not data_oblast is None and not self.status_alarmed[1]:
                     self.alarm_on.emit(True)
-                    self.alarmed = True
-                if data_oblast is None:
+                    self.status_alarmed = [self.status_alarmed[0]+1, True, False]
+                if data_oblast is None and not self.status_alarmed[2] and self.status_alarmed[1] != 0:
                     self.alarm_on.emit(False)
-                    self.alarmed = False
+                    self.status_alarmed = [self.status_alarmed[0]+1, False, True]
 
 
 class Window(QtWidgets.QMainWindow):
@@ -46,7 +47,7 @@ class Window(QtWidgets.QMainWindow):
         self.setGeometry(self.geometry_rect())
         self.show()
         self.thread = QThread(self)
-        self.worker = Worker("Luhans'k")
+        self.worker = Worker("Kharkiv")  # Luhans'k
 
     def geometry_rect(self) -> QtCore.QRect:
         rect = QtWidgets.QApplication.desktop().availableGeometry()
@@ -67,8 +68,8 @@ class Window(QtWidgets.QMainWindow):
         msgbox.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
-        if self.worker.alarmed: # if alarm on
-            msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_on1.png"))))
+        if self.worker.status_alarmed[1]: # if alarm on
+            msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_on.png"))))
             msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
             msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_off.png"))))
