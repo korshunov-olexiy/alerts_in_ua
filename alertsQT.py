@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+
 import json
 from time import sleep
 from urllib.request import urlopen
+from io import StringIO
+
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
@@ -19,7 +23,8 @@ class Worker(QObject):
     def run(self):
         with urlopen('https://sirens.in.ua/api/v1/', timeout=10) as response:
             sleep(3)
-            data = json.loads(response.read()).lower()
+            data_raw = json.loads(response.read())
+            data = data_raw[self.oblast].lower()
             if data[self.oblast]:
                 self.alarm_on.emit(1)
             return json.loads(data)
@@ -36,7 +41,7 @@ class Window(QtWidgets.QMainWindow):
         self.setGeometry(self.geometry_rect())
         self.show()
         self.thread = QThread(self)
-        self.worker = Worker()
+        self.worker = Worker("Luhans'k")
 
     def geometry_rect(self) -> QtCore.QRect:
         rect = QtWidgets.QApplication.desktop().availableGeometry()
