@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+from configparser import ConfigParser
 from pathlib import Path
 from time import sleep
 from urllib.request import urlopen
@@ -12,23 +13,47 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMessageBox
 
 
+class ReadConfig:
+    def __init__(self, ini_file) -> None:
+        config = ConfigParser(delimiters="=")
+        config.read(ini_file, encoding="utf-8")
+        flag_save = False
+        if not config.has_section("main"):
+            # set default value of option 'oblast' in 'main' section
+            config.add_section("main")
+            flag_save = True
+        if not config.has_option("main", "oblast"):
+            config["main"] = {"oblast": "Sumy"}
+            flag_save = True
+        if not config.has_option("main", "url_alarm_api"):
+            config.set("main", "url_alarm_api", "https://sirens.in.ua/api/v1/")
+            flag_save = True
+        if not config.has_option("main", "url_alarm_map"):
+            config.set("main", "url_alarm_map", "https://alerts.in.ua")
+            flag_save = True
+        if flag_save: # save config in ini-file
+            with open(ini_file, "w") as configfile:
+                config.write(configfile)
+        self.oblast = config.get("main", "oblast")
+        self.url_alarm_api = config.get("main", "url_alarm_api")
+        self.url_alarm_map = config.get("main", "url_alarm_map")
+
+
 class Worker(QObject):
     finished = pyqtSignal()
     alarm_on = pyqtSignal(int)
-    # [number of hits, alarmed on, alarmed off]
-    status_alarmed = [0, False, False]
 
-    def __init__(self, oblast) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.oblast = oblast.lower()
+        self.status_alarmed = [0, False, False]
 
     def run(self) -> None:
         while True:
-            with urlopen('https://sirens.in.ua/api/v1/', timeout=10) as response:
+            with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
                 sleep(3)
                 data_raw = json.loads(response.read())
                 data = {k.lower(): v for k, v in data_raw.items()}
-                data_oblast = data[self.oblast.lower()]
+                data_oblast = data[ini_obj.oblast.lower()]
                 if not data_oblast is None and not self.status_alarmed[1]:
                     self.alarm_on.emit(True)
                     self.status_alarmed = [self.status_alarmed[0]+1, True, False]
@@ -47,7 +72,7 @@ class Window(QtWidgets.QMainWindow):
         self.setGeometry(self.geometry_rect())
         self.show()
         self.thread = QThread(self)
-        self.worker = Worker("Kharkiv")  # Luhans'k
+        self.worker = Worker()
 
     def geometry_rect(self) -> QtCore.QRect:
         rect = QtWidgets.QApplication.desktop().availableGeometry()
@@ -68,7 +93,7 @@ class Window(QtWidgets.QMainWindow):
         msgbox.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
-        if self.worker.status_alarmed[1]: # if alarm on
+        if self.worker.status_alarmed: # if alarm on
             msgbox.setIconPixmap(QPixmap(str(Path().cwd().joinpath("msg_alarm_on.png"))))
             msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
@@ -80,12 +105,13 @@ class Window(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     import sys
 
+    ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
     app = QtWidgets.QApplication(sys.argv)
     window = Window()
     browser = QWebEngineView(window)
     window.setCentralWidget(browser)
     window.check_alarm()
-    url = QtCore.QUrl("https://alerts.in.ua")  # /lite
+    url = QtCore.QUrl(ini_obj.url_alarm_map)  # /lite
     browser.load(url)
     ret = app.exec_()
     window.thread.terminate()
