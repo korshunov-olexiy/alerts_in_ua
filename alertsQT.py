@@ -9,7 +9,7 @@ from urllib.request import urlopen
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMessageBox
 
