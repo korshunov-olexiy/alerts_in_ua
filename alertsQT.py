@@ -90,7 +90,7 @@ class Window(QtWidgets.QMainWindow):
         super().__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
                                 QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|
                                 QtCore.Qt.WindowMinimizeButtonHint)
-        title = "Мапа тревог України"
+        title = "Мапа тривог України"
         self.setWindowTitle(title)
         self.setGeometry(self.geometry_rect())
         self.show()
