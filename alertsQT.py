@@ -81,6 +81,9 @@ class Worker(QObject):
                     self.alarm_on.emit(False)
                     self.status_alarmed = [self.status_alarmed[0]+1, False, True]
 
+    def stop(self):
+        self._isRunning = False
+
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -91,7 +94,7 @@ class Window(QtWidgets.QMainWindow):
         self.setWindowTitle(title)
         self.setGeometry(self.geometry_rect())
         self.show()
-        self.thread = QThread(self)
+        self.thread = QThread()
         self.worker = Worker()
 
     def geometry_rect(self) -> QtCore.QRect:
@@ -104,7 +107,7 @@ class Window(QtWidgets.QMainWindow):
     def check_alarm(self):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker.finished.connect(self.stop_thread)
         self.worker.alarm_on.connect(self.ShowMessage)
         self.thread.start()
 
@@ -121,6 +124,11 @@ class Window(QtWidgets.QMainWindow):
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
         msgbox.exec_()
 
+    def stop_thread(self):
+        self.worker.stop()
+        self.thread.quit()
+        self.thread.wait()
+
 
 if __name__ == "__main__":
     import sys
@@ -131,10 +139,7 @@ if __name__ == "__main__":
     browser = QWebEngineView(window)
     window.setCentralWidget(browser)
     window.check_alarm()
-    url = QtCore.QUrl(ini_obj.url_alarm_map)  # /lite
+    url = QtCore.QUrl(ini_obj.url_alarm_map)
     browser.load(url)
     ret = app.exec_()
-    window.thread.terminate()
-    # window.thread.quit()
-    # window.thread.wait()
     sys.exit(ret)
