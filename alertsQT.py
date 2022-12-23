@@ -32,10 +32,9 @@ class ReadConfig:
             self.config.add_section(self.main_section)
         if not self.config.has_option(self.main_section, "msg_alarm_on"):
             self.config.set(self.main_section, "msg_alarm_on", self.base64_data["msg_alarm_on"])
-            self.check_alarm_file("on")
         if not self.config.has_option(self.main_section, "msg_alarm_off"):
             self.config.set(self.main_section, "msg_alarm_off", self.base64_data["msg_alarm_off"])
-            self.check_alarm_file("off")
+        self.check_alarm_file()
         if not self.config.has_option(self.main_section, "oblast"):
             self.config.set(self.main_section, "oblast", "Sumy")
         if not self.config.has_option(self.main_section, "url_alarm_api"):
@@ -49,17 +48,15 @@ class ReadConfig:
         self.url_alarm_api = self.config.get(self.main_section, "url_alarm_api")
         self.url_alarm_map = self.config.get(self.main_section, "url_alarm_map")
 
-    def check_alarm_file(self, file_type):
-        if file_type == "on":
-            file_on = self.root_dir.joinpath(self.file_msg_alarm_on)
-            if not file_on.exists():
-                with open(file_on, "wb") as f:
-                    f.write(b64decode(self.base64_data["msg_alarm_on"]))
-        else:
-            file_off = self.root_dir.joinpath(self.file_msg_alarm_off)
-            if not file_off.exists():
-                with open(file_off, "wb") as f:
-                    f.write(b64decode(self.base64_data["msg_alarm_off"]))
+    def check_alarm_file(self) -> None:
+        file_on = self.root_dir.joinpath(self.file_msg_alarm_on)
+        if not file_on.exists():
+            with open(file_on, "wb") as f:
+                f.write(b64decode(self.base64_data["msg_alarm_on"]))
+        file_off = self.root_dir.joinpath(self.file_msg_alarm_off)
+        if not file_off.exists():
+            with open(file_off, "wb") as f:
+                f.write(b64decode(self.base64_data["msg_alarm_off"]))
 
 
 class Worker(QObject):
