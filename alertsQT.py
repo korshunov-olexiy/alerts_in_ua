@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from png_files import png_files
 import json
 from base64 import standard_b64decode as b64decode
 from configparser import ConfigParser
@@ -13,6 +12,8 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMessageBox
+
+from png_files import png_files
 
 
 class ReadConfig:
