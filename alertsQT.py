@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QPushButton, QRadioButton, QGroupBox, QGridLayout, QButtonGroup
 
 from png_files import png_files
 
@@ -19,14 +19,19 @@ from png_files import png_files
 class ReadConfig:
     def __init__(self, ini_file) -> None:
         self.ini_file = ini_file
+        if not self.ini_file.exists():
+            self.choose_oblast()
         self.file_msg_alarm_on = "msg_alarm_on.png"
         self.file_msg_alarm_off = "msg_alarm_off.png"
         self.root_dir = Path().cwd()
         self.base64_alarm_on = png_files["msg_alarm_on"]
         self.base64_alarm_off = png_files["msg_alarm_off"]
         self.check_config()
-    
-    def check_config(self):
+
+    def choose_oblast() -> str:
+        pass
+
+    def check_config(self) -> None:
         self.main_section = "main"
         self.config = ConfigParser(delimiters="|")
         self.config.read(self.ini_file, encoding="utf8")
@@ -88,17 +93,58 @@ class Worker(QObject):
         self._isRunning = False
 
 
-class Window(QtWidgets.QMainWindow):
-    def __init__(self) -> None:
-        super().__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
+class ChooseDialog(QDialog):
+
+    def __init__(self, parent=None) -> None:
+        super(ChooseDialog, self).__init__(parent=parent, flags=QtCore.Qt.WindowStaysOnTopHint)
+        self.btn_text = "Слідкувати за"
+        self.setWindowTitle("Вибір області для моніторингу")
+        self.group = QButtonGroup()
+        self.group.setExclusive(True)
+        self.radiobuttons = [QRadioButton(d) for d in self.get_oblasts()]
+        self.layout = QVBoxLayout()
+        self.button = QPushButton()
+        self.button.setText(self.btn_text)
+        for radiobutton in self.radiobuttons:
+            self.group.addButton(radiobutton)
+            self.layout.addWidget(radiobutton)
+            radiobutton.toggled.connect(self.set_command_button_text)
+            if radiobutton.text().lower() == "sumy":
+                radiobutton.setChecked(True)
+        self.setLayout(self.layout)
+        self.layout.addWidget(self.button)
+        self.resize(300, 64)
+
+    def set_command_button_text(self):
+        self.button.setText(f"{self.btn_text} '{self.group.checkedButton().text()}'")
+
+    ''' get text of checked radiobutton or empty '''
+    def get_checked_radiobutton(self):
+        for elem in self.groupbox.children():
+            if isinstance(elem, QtWidgets.QRadioButton) and elem.isChecked():
+                return elem.text()
+        return ""
+
+    ''' возвращает список областей '''
+    def get_oblasts(self):
+        with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
+            return list(json.loads(response.read()).keys())
+
+
+class MainWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent=None) -> None:
+        super(MainWindow, self).__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
                                 QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|
                                 QtCore.Qt.WindowMinimizeButtonHint)
         title = "Мапа тривог України"
         self.setWindowTitle(title)
         self.setGeometry(self.geometry_rect())
-        self.show()
         self.thread = QThread()
         self.worker = Worker()
+        self.show()
+        choice_dialog = ChooseDialog()
+        # choice_dialog.show()
+        choice_dialog.exec_()
 
     def geometry_rect(self) -> QtCore.QRect:
         rect = QtWidgets.QApplication.desktop().availableGeometry()
@@ -138,7 +184,7 @@ if __name__ == "__main__":
 
     ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
     app = QtWidgets.QApplication(sys.argv)
-    window = Window()
+    window = MainWindow()
     browser = QWebEngineView(window)
     window.setCentralWidget(browser)
     window.check_alarm()
