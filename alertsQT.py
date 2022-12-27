@@ -1,20 +1,33 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Optional, List, Any
 from base64 import standard_b64decode as b64decode
 from configparser import ConfigParser
 from pathlib import Path
 from time import sleep
 from urllib.request import urlopen
+from urllib.error import URLError
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QPushButton, QRadioButton, QGroupBox, QGridLayout, QButtonGroup
+from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QPushButton, QRadioButton, QToolBar, QButtonGroup, QLabel, QWidget, QSizePolicy
 
 from png_files import png_files
 
+
+class StatusAlarmed:
+    def __init__(self, status_alarmed: Optional[List[Any]] = [0, False, False]) -> None:
+        self.status_alarmed = status_alarmed
+    def get(self) -> List[Any]:
+        return self.status_alarmed
+    def set(self, status_value: List[Any]) -> None:
+        self.status_alarmed = status_value
+
+
+status_alarmed = StatusAlarmed()
 
 class ReadConfig:
     def __init__(self, ini_file) -> None:
@@ -28,8 +41,10 @@ class ReadConfig:
         self.base64_alarm_off = png_files["msg_alarm_off"]
         self.check_config()
 
+    ''' if ini file not exists show dialog for choice region '''
     def choose_oblast() -> str:
-        pass
+        choice_dialog = ChooseDialog()
+        choice_dialog.exec_()
 
     def check_config(self) -> None:
         self.main_section = "main"
@@ -39,22 +54,36 @@ class ReadConfig:
         if not self.config.has_section(self.main_section):
             self.config.add_section(self.main_section)
         if not self.config.has_option(self.main_section, "msg_alarm_on"):
-            self.config.set(self.main_section, "msg_alarm_on", self.base64_alarm_on)
+            self.set_value(self.main_section, "msg_alarm_on", self.base64_alarm_on)
         if not self.config.has_option(self.main_section, "msg_alarm_off"):
-            self.config.set(self.main_section, "msg_alarm_off", self.base64_alarm_off)
+            self.set_value(self.main_section, "msg_alarm_off", self.base64_alarm_off)
         self.check_alarm_file()
         if not self.config.has_option(self.main_section, "oblast"):
-            self.config.set(self.main_section, "oblast", "Sumy")
+            self.set_value(self.main_section, "oblast", "Sumy")
         if not self.config.has_option(self.main_section, "url_alarm_api"):
-            self.config.set(self.main_section, "url_alarm_api", "https://sirens.in.ua/api/v1/")
+            self.set_value(self.main_section, "url_alarm_api", "https://sirens.in.ua/api/v1/")
         if not self.config.has_option(self.main_section, "url_alarm_map"):
-            self.config.set(self.main_section, "url_alarm_map", "https://alerts.in.ua")
+            self.set_value(self.main_section, "url_alarm_map", "https://alerts.in.ua")
         if self.config is self.config_state1: # save config in ini-file
-            with open(self.ini_file, "w") as configfile:
-                self.config.write(configfile)
+            self.save_config()
         self.oblast = self.config.get(self.main_section, "oblast")
         self.url_alarm_api = self.config.get(self.main_section, "url_alarm_api")
         self.url_alarm_map = self.config.get(self.main_section, "url_alarm_map")
+
+    ''' get value from key in section ini file '''
+    def get_value(self, section, key) -> str:
+        return self.config.get(section, key)
+
+    ''' save value to key for section '''
+    def set_value(self, section, key, value) -> bool:
+        self.config.set(section, key, value)
+        return True
+
+    ''' save to ini file '''
+    def save_config(self) -> bool:
+        with open(self.ini_file, "w") as configfile:
+            self.config.write(configfile)
+        return True
 
     def check_alarm_file(self) -> None:
         file_on = self.root_dir.joinpath(self.file_msg_alarm_on)
@@ -73,21 +102,32 @@ class Worker(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.status_alarmed = [0, False, False]
 
     def run(self) -> None:
         while True:
-            with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
-                sleep(3)
-                data_raw = json.loads(response.read())
-                data = {k.lower(): v for k, v in data_raw.items()}
-                data_oblast = data[ini_obj.oblast.lower()]
-                if not data_oblast is None and not self.status_alarmed[1]:
-                    self.alarm_on.emit(True)
-                    self.status_alarmed = [self.status_alarmed[0]+1, True, False]
-                if data_oblast is None and not self.status_alarmed[2] and self.status_alarmed[1] != 0:
-                    self.alarm_on.emit(False)
-                    self.status_alarmed = [self.status_alarmed[0]+1, False, True]
+            ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
+            try:
+                with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
+                    sleep(3)
+                    window.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
+                    window.label.setStyleSheet("color: green;")
+                    data_raw = json.loads(response.read())
+                    data = {k.lower(): v for k, v in data_raw.items()}
+                    data_oblast = data[ini_obj.oblast.lower()]
+                    if not data_oblast is None and not status_alarmed.get()[1]:
+                        self.alarm_on.emit(True)
+                        status_alarmed.set([status_alarmed.get()[0]+1, True, False])
+                    if data_oblast is None and not status_alarmed.get()[2] and status_alarmed.get()[1] != 0:
+                        self.alarm_on.emit(False)
+                        status_alarmed.set([status_alarmed.get()[0]+1, False, True])
+            except TimeoutError:
+                window.label.setText("Затримка отримання даних.\nМожливо не працює сервер...")
+                window.label.setStyleSheet("color: yellow;")
+                sleep(10)
+            except (URLError, ConnectionResetError):
+                window.label.setText("Помилка отримання даних.\nПеревірте з'єднання...")
+                window.label.setStyleSheet("color: red;")
+                sleep(10)
 
     def stop(self):
         self._isRunning = False
@@ -99,33 +139,34 @@ class ChooseDialog(QDialog):
         super(ChooseDialog, self).__init__(parent=parent, flags=QtCore.Qt.WindowStaysOnTopHint)
         self.btn_text = "Слідкувати за"
         self.setWindowTitle("Вибір області для моніторингу")
-        self.group = QButtonGroup()
-        self.group.setExclusive(True)
-        self.radiobuttons = [QRadioButton(d) for d in self.get_oblasts()]
+        self.btngroup = QButtonGroup()
+        self.btngroup.setExclusive(True)
+        self.radiobuttons = [QRadioButton(oblast) for oblast in self.get_oblasts()]
         self.layout = QVBoxLayout()
         self.button = QPushButton()
         self.button.setText(self.btn_text)
+        self.button.clicked.connect(self.save_config_oblast)
         for radiobutton in self.radiobuttons:
-            self.group.addButton(radiobutton)
+            self.btngroup.addButton(radiobutton)
             self.layout.addWidget(radiobutton)
-            radiobutton.toggled.connect(self.set_command_button_text)
-            if radiobutton.text().lower() == "sumy":
+            radiobutton.toggled.connect(self.set_button_text)
+            if radiobutton.text().lower() == ini_obj.get_value("main", "oblast").lower():
                 radiobutton.setChecked(True)
         self.setLayout(self.layout)
         self.layout.addWidget(self.button)
         self.resize(300, 64)
 
-    def set_command_button_text(self):
-        self.button.setText(f"{self.btn_text} '{self.group.checkedButton().text()}'")
+    ''' set the text on the button '''
+    def set_button_text(self):
+        self.button.setText(f"{self.btn_text} '{self.btngroup.checkedButton().text()}'")
 
-    ''' get text of checked radiobutton or empty '''
-    def get_checked_radiobutton(self):
-        for elem in self.groupbox.children():
-            if isinstance(elem, QtWidgets.QRadioButton) and elem.isChecked():
-                return elem.text()
-        return ""
+    ''' save checked oblast to ini file '''
+    def save_config_oblast(self):
+        ini_obj.set_value("main", "oblast", self.btngroup.checkedButton().text())
+        ini_obj.save_config()
+        self.close()
 
-    ''' возвращает список областей '''
+    ''' return list of regions '''
     def get_oblasts(self):
         with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
             return list(json.loads(response.read()).keys())
@@ -134,16 +175,45 @@ class ChooseDialog(QDialog):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None) -> None:
         super(MainWindow, self).__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
-                                QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|
-                                QtCore.Qt.WindowMinimizeButtonHint)
+            QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|QtCore.Qt.WindowMinimizeButtonHint)
         title = "Мапа тривог України"
         self.setWindowTitle(title)
         self.setGeometry(self.geometry_rect())
         self.thread = QThread()
         self.worker = Worker()
         self.show()
-        choice_dialog = ChooseDialog()
-        # choice_dialog.show()
+        # add browser object
+        self.browser = QWebEngineView(self)
+        self.setCentralWidget(self.browser)
+        url = QtCore.QUrl(ini_obj.url_alarm_map)
+        self.browser.load(url)
+        self.browser.titleChanged.connect(self.reload_page)
+        # add toolbar object
+        self.toolbar = QToolBar()
+        self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+        self.addToolBar(self.toolbar)
+        self.choice_button = QPushButton(self)
+        self.choice_button.setText("Змінити область\nспостереження")
+        self.choice_button.setStyleSheet("color: #873e23;")
+        self.choice_button.clicked.connect(self.show_choose_dialog)
+        self.toolbar.addWidget(self.choice_button)
+        self.spacer = QWidget()
+        self.spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(self.spacer)
+        self.label = QLabel(self)
+        self.label.setTextFormat(Qt.RichText)
+        self.label.setMargin(5)
+        self.label.setStyleSheet("color: green;")  #border: 1px solid black;
+        self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        self.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
+        self.toolbar.addWidget(self.label)
+
+    def reload_page(self):
+        self.browser.reload()
+
+    ''' show dialog for choice region '''
+    def show_choose_dialog(self):
+        choice_dialog = ChooseDialog(self)
         choice_dialog.exec_()
 
     def geometry_rect(self) -> QtCore.QRect:
@@ -153,19 +223,19 @@ class MainWindow(QtWidgets.QMainWindow):
         x = rect.width() - win_width - 1
         return QtCore.QRect(x, toolbar, win_width, win_height)
 
-    def check_alarm(self):
+    def check_alarm(self) -> None:
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.stop_thread)
         self.worker.alarm_on.connect(self.ShowMessage)
         self.thread.start()
 
-    def ShowMessage(self):
+    def ShowMessage(self) -> None:
         msgbox = QMessageBox(parent=self)
         msgbox.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
-        if self.worker.status_alarmed: # if alarm on
+        if status_alarmed.get()[1]: # if alarm on
             msgbox.setIconPixmap(QPixmap(Path().cwd().joinpath("msg_alarm_on.png").__str__()))
             msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
@@ -173,7 +243,7 @@ class MainWindow(QtWidgets.QMainWindow):
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
         msgbox.exec_()
 
-    def stop_thread(self):
+    def stop_thread(self) -> None:
         self.worker.stop()
         self.thread.quit()
         self.thread.wait()
@@ -185,10 +255,6 @@ if __name__ == "__main__":
     ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
-    browser = QWebEngineView(window)
-    window.setCentralWidget(browser)
     window.check_alarm()
-    url = QtCore.QUrl(ini_obj.url_alarm_map)
-    browser.load(url)
     ret = app.exec_()
     sys.exit(ret)
