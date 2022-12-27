@@ -32,19 +32,12 @@ status_alarmed = StatusAlarmed()
 class ReadConfig:
     def __init__(self, ini_file) -> None:
         self.ini_file = ini_file
-        if not self.ini_file.exists():
-            self.choose_oblast()
         self.file_msg_alarm_on = "msg_alarm_on.png"
         self.file_msg_alarm_off = "msg_alarm_off.png"
         self.root_dir = Path().cwd()
         self.base64_alarm_on = png_files["msg_alarm_on"]
         self.base64_alarm_off = png_files["msg_alarm_off"]
         self.check_config()
-
-    ''' if ini file not exists show dialog for choice region '''
-    def choose_oblast() -> str:
-        choice_dialog = ChooseDialog()
-        choice_dialog.exec_()
 
     def check_config(self) -> None:
         self.main_section = "main"
@@ -252,8 +245,8 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     import sys
 
-    ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
     app = QtWidgets.QApplication(sys.argv)
+    ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
     window = MainWindow()
     window.check_alarm()
     ret = app.exec_()
