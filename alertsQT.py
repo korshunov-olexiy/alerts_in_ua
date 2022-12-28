@@ -9,22 +9,29 @@ from time import sleep
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtNetwork
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QPushButton, QRadioButton, QToolBar, QButtonGroup, QLabel, QWidget, QSizePolicy
+from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 
 from png_files import png_files
 
 
 class StatusAlarmed:
-    def __init__(self, status_alarmed: Optional[List[Any]] = [0, False, False]) -> None:
+
+    def __init__(self, status_alarmed: Optional[List[Any]] = [0, False]) -> None:
         self.status_alarmed = status_alarmed
+
     def get(self) -> List[Any]:
         return self.status_alarmed
+
     def set(self, status_value: List[Any]) -> None:
         self.status_alarmed = status_value
+
+    def clear(self):
+        self.set([0, False])
 
 
 status_alarmed = StatusAlarmed()
@@ -57,8 +64,7 @@ class ReadConfig:
             self.set_value(self.main_section, "url_alarm_api", "https://sirens.in.ua/api/v1/")
         if not self.config.has_option(self.main_section, "url_alarm_map"):
             self.set_value(self.main_section, "url_alarm_map", "https://alerts.in.ua")
-        if self.config is self.config_state1: # save config in ini-file
-            self.save_config()
+        self.save_config()
         self.oblast = self.config.get(self.main_section, "oblast")
         self.url_alarm_api = self.config.get(self.main_section, "url_alarm_api")
         self.url_alarm_map = self.config.get(self.main_section, "url_alarm_map")
@@ -98,21 +104,21 @@ class Worker(QObject):
 
     def run(self) -> None:
         while True:
-            ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
             try:
+                ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
+                ini_obj_state1 = ini_obj
                 with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
-                    sleep(3)
                     window.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
                     window.label.setStyleSheet("color: green;")
                     data_raw = json.loads(response.read())
                     data = {k.lower(): v for k, v in data_raw.items()}
-                    data_oblast = data[ini_obj.oblast.lower()]
-                    if not data_oblast is None and not status_alarmed.get()[1]:
+                    data_oblast = data.get(ini_obj.oblast.lower())
+                    if not data_oblast is None and status_alarmed.get()[1] == False:
                         self.alarm_on.emit(True)
-                        status_alarmed.set([status_alarmed.get()[0]+1, True, False])
-                    if data_oblast is None and not status_alarmed.get()[2] and status_alarmed.get()[1] != 0:
+                        status_alarmed.set([status_alarmed.get()[0]+1, True])
+                    if status_alarmed.get()[0] > 0 and status_alarmed.get()[1] == False:
                         self.alarm_on.emit(False)
-                        status_alarmed.set([status_alarmed.get()[0]+1, False, True])
+                        status_alarmed.set([status_alarmed.get()[0]+1, False])
             except TimeoutError:
                 window.label.setText("Затримка отримання даних.\nМожливо не працює сервер...")
                 window.label.setStyleSheet("color: yellow;")
@@ -121,6 +127,7 @@ class Worker(QObject):
                 window.label.setText("Помилка отримання даних.\nПеревірте з'єднання...")
                 window.label.setStyleSheet("color: red;")
                 sleep(10)
+            sleep(3)
 
     def stop(self):
         self._isRunning = False
@@ -156,6 +163,7 @@ class ChooseDialog(QDialog):
     ''' save checked oblast to ini file '''
     def save_config_oblast(self):
         ini_obj.set_value("main", "oblast", self.btngroup.checkedButton().text())
+        status_alarmed.clear()
         ini_obj.save_config()
         self.close()
 
@@ -175,12 +183,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.thread = QThread()
         self.worker = Worker()
         self.show()
+        
+        self.page = QWebEnginePage()
         # add browser object
         self.browser = QWebEngineView(self)
+        self.browser.setPage(self.page)
         self.setCentralWidget(self.browser)
         url = QtCore.QUrl(ini_obj.url_alarm_map)
-        self.browser.load(url)
-        self.browser.titleChanged.connect(self.reload_page)
+        self.page.setUrl(url)
+        # self.browser.load(url)
+        # self.browser.titleChanged.connect(self.reload_page)
         # add toolbar object
         self.toolbar = QToolBar()
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
@@ -200,9 +212,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
         self.toolbar.addWidget(self.label)
-
-    def reload_page(self):
-        self.browser.reload()
 
     ''' show dialog for choice region '''
     def show_choose_dialog(self):
