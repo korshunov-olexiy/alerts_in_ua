@@ -85,6 +85,7 @@ class ReadConfig:
             self.config.write(configfile)
         return True
 
+    ''' Creates images if they are not in the working directory of the program '''
     def check_alarm_file(self) -> None:
         file_on = self.root_dir.joinpath(self.file_msg_alarm_on)
         if not file_on.exists():
