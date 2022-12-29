@@ -52,7 +52,6 @@ class ReadConfig:
         self.main_section = "main"
         self.config = ConfigParser(delimiters="|")
         self.config.read(self.ini_file, encoding="utf8")
-        self.config_state1 = self.config
         if not self.config.has_section(self.main_section):
             self.config.add_section(self.main_section)
         if not self.config.has_option(self.main_section, "msg_alarm_on"):
