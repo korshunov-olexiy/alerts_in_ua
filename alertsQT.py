@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import random
 from base64 import standard_b64decode as b64decode
 from configparser import ConfigParser
 from pathlib import Path
