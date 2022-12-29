@@ -36,6 +36,7 @@ class StatusAlarmed:
 
 
 status_alarmed = StatusAlarmed()
+root_dir = Path().cwd()
 
 class ReadConfig:
 
@@ -43,7 +44,6 @@ class ReadConfig:
         self.ini_file = ini_file
         self.file_msg_alarm_on = "msg_alarm_on.png"
         self.file_msg_alarm_off = "msg_alarm_off.png"
-        self.root_dir = Path().cwd()
         self.base64_alarm_on = png_files["msg_alarm_on"]
         self.base64_alarm_off = png_files["msg_alarm_off"]
         self.check_config()
@@ -87,11 +87,11 @@ class ReadConfig:
 
     ''' Creates images if they are not in the working directory of the program '''
     def check_alarm_file(self) -> None:
-        file_on = self.root_dir.joinpath(self.file_msg_alarm_on)
+        file_on = root_dir.joinpath(self.file_msg_alarm_on)
         if not file_on.exists():
             with open(file_on, "wb") as f:
                 f.write(b64decode(self.base64_alarm_on))
-        file_off = self.root_dir.joinpath(self.file_msg_alarm_off)
+        file_off = root_dir.joinpath(self.file_msg_alarm_off)
         if not file_off.exists():
             with open(file_off, "wb") as f:
                 f.write(b64decode(self.base64_alarm_off))
@@ -108,7 +108,7 @@ class Worker(QObject):
     def run(self) -> None:
         while True:
             try:
-                ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
+                ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
                 ini_obj_state1 = ini_obj
                 with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
                     window.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
@@ -242,10 +242,10 @@ class MainWindow(QtWidgets.QMainWindow):
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
         if status_alarmed.get()[1]: # if alarm on
-            msgbox.setIconPixmap(QPixmap(Path().cwd().joinpath("msg_alarm_on.png").__str__()))
+            msgbox.setIconPixmap(QPixmap(root_dir.joinpath("msg_alarm_on.png").__str__()))
             msgbox.setText("УВАГА! Повітряна тривога!\nВСІ В УКРИТТЯ!!!")
         else: # if alarm off
-            msgbox.setIconPixmap(QPixmap(Path().cwd().joinpath("msg_alarm_off.png").__str__()))
+            msgbox.setIconPixmap(QPixmap(root_dir.joinpath("msg_alarm_off.png").__str__()))
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
         timer.start()
         msgbox.exec_()
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
-    ini_obj = ReadConfig(Path().cwd().joinpath("config.ini"))
+    ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
     window = MainWindow()
     window.check_alarm()
     ret = app.exec_()
