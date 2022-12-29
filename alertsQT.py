@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Optional, List, Any
+import random
 from base64 import standard_b64decode as b64decode
 from configparser import ConfigParser
 from pathlib import Path
 from time import sleep
-from urllib.request import urlopen
+from typing import Any, List, Optional
 from urllib.error import URLError
+from urllib.request import urlopen
 
-from PyQt5 import QtCore, QtWidgets, QtNetwork
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QPushButton, QRadioButton, QToolBar, QButtonGroup, QLabel, QWidget, QSizePolicy
-from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
+from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineView
+from PyQt5.QtWidgets import (QButtonGroup, QDialog, QLabel, QMessageBox,
+                             QPushButton, QRadioButton, QSizePolicy, QToolBar,
+                             QVBoxLayout, QWidget)
 
 from png_files import png_files
 
@@ -191,9 +193,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.browser)
         url = QtCore.QUrl(ini_obj.url_alarm_map)
         self.page.setUrl(url)
-        # self.browser.load(url)
-        # self.browser.titleChanged.connect(self.reload_page)
-        # add toolbar object
         self.toolbar = QToolBar()
         self.toolbar.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.addToolBar(self.toolbar)
@@ -234,6 +233,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def ShowMessage(self) -> None:
         msgbox = QMessageBox(parent=self)
+        self.i_color = 0
+        timer = QTimer(msgbox, interval=1000, timeout=self.updatecolor)
+        self.updatecolor()
         msgbox.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint)
         msgbox.setWindowTitle("Повітряна тривога")
         msgbox.setDefaultButton(QMessageBox.Ok)
@@ -243,7 +245,16 @@ class MainWindow(QtWidgets.QMainWindow):
         else: # if alarm off
             msgbox.setIconPixmap(QPixmap(Path().cwd().joinpath("msg_alarm_off.png").__str__()))
             msgbox.setText("ВІДБІЙ ПОВІТРЯНОЇ ТРИВОГИ")
+        timer.start()
         msgbox.exec_()
+
+    ''' Apply style to QMessageBox and QPushButton '''
+    def updatecolor(self):
+        rnd_color = ['#6B717E', '#897C8D', '#818290', '#A66465', '#F15D50', '#F35041', '#E23525']
+        if self.i_color > len(rnd_color)-1:
+            self.i_color = 0
+        self.setStyleSheet(f"QMessageBox{{background: {rnd_color[self.i_color]};}} QPushButton{{background-color: white;}}")
+        self.i_color += 1
 
     def stop_thread(self) -> None:
         self.worker.stop()
