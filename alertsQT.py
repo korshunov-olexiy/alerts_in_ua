@@ -39,6 +39,7 @@ class StatusAlarmed:
 status_alarmed = StatusAlarmed()
 
 class ReadConfig:
+
     def __init__(self, ini_file) -> None:
         self.ini_file = ini_file
         self.file_msg_alarm_on = "msg_alarm_on.png"
@@ -97,6 +98,7 @@ class ReadConfig:
 
 
 class Worker(QObject):
+
     finished = pyqtSignal()
     alarm_on = pyqtSignal(int)
 
@@ -175,6 +177,7 @@ class ChooseDialog(QDialog):
 
 
 class MainWindow(QtWidgets.QMainWindow):
+
     def __init__(self, parent=None) -> None:
         super(MainWindow, self).__init__(flags=QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.CustomizeWindowHint|
             QtCore.Qt.WindowMaximizeButtonHint|QtCore.Qt.WindowCloseButtonHint|QtCore.Qt.WindowMinimizeButtonHint)
