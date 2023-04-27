@@ -107,9 +107,8 @@ class Worker(QObject):
 
     def run(self) -> None:
         while True:
+            ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
             try:
-                ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
-                ini_obj_state1 = ini_obj
                 with urlopen(ini_obj.url_alarm_api, timeout=10) as response:
                     window.label.setText(f"Робота в звичайному режимі...<br>Область для спостереження: <b>{ini_obj.oblast}<\b>")
                     window.label.setStyleSheet("color: green;")
@@ -187,7 +186,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.thread = QThread()
         self.worker = Worker()
         self.show()
-        
+
         self.page = QWebEnginePage()
         # add browser object
         self.browser = QWebEngineView(self)
@@ -265,7 +264,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    import sys
+    import sys, ctypes
+
+    # Get console descriptor
+    console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if console_hwnd != 0:
+        # Hide console
+        ctypes.windll.user32.ShowWindow(console_hwnd, 0)
 
     app = QtWidgets.QApplication(sys.argv)
     ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
