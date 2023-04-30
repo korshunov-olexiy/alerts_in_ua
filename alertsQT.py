@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import json
 from base64 import standard_b64decode as b64decode
 from configparser import ConfigParser
@@ -264,13 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    import sys, ctypes
-
-    # Get console descriptor
-    console_hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-    if console_hwnd != 0:
-        # Hide console
-        ctypes.windll.user32.ShowWindow(console_hwnd, 0)
+    import sys
 
     app = QtWidgets.QApplication(sys.argv)
     ini_obj = ReadConfig(root_dir.joinpath("config.ini"))
